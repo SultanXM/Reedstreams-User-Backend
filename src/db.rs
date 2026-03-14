@@ -86,6 +86,10 @@ async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
         .execute(pool)
         .await?;
     
+    sqlx::query("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS badge VARCHAR(20)")
+        .execute(pool)
+        .await?;
+    
     
     sqlx::query(r#"
         CREATE TABLE IF NOT EXISTS playlists (

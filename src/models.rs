@@ -68,6 +68,7 @@ pub struct Profile {
     pub name_color: Option<String>,
     pub name_glow: Option<i32>,
     pub description: Option<String>,
+    pub badge: Option<String>,
     pub updated_at: NaiveDateTime,
 }
 
@@ -90,6 +91,8 @@ pub struct AdminUpdateUserRequest {
     pub tags: Option<Vec<String>>,
     pub memes: Option<Vec<String>>,
     pub name_color: Option<String>,
+    pub name_glow: Option<i32>,
+    pub badge: Option<String>,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]

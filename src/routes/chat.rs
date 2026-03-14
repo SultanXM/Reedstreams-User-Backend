@@ -31,6 +31,7 @@ pub struct ChatMessageWithUserData {
     pub profile_pic_url: Option<String>,
     pub name_color: Option<String>,
     pub name_glow: Option<i32>,
+    pub badge: Option<String>,
 }
 
 pub fn router(pool: PgPool) -> Router {
@@ -74,7 +75,8 @@ async fn get_messages(
             p.memes,
             p.profile_pic_url,
             p.name_color,
-            p.name_glow
+            p.name_glow,
+            p.badge
         FROM chat_messages m
         LEFT JOIN profiles p ON m.user_id = p.user_id
         ORDER BY m.created_at DESC 
@@ -119,7 +121,8 @@ async fn send_message(
             (SELECT memes FROM profiles WHERE user_id = $1) as memes,
             (SELECT profile_pic_url FROM profiles WHERE user_id = $1) as profile_pic_url,
             (SELECT name_color FROM profiles WHERE user_id = $1) as name_color,
-            (SELECT name_glow FROM profiles WHERE user_id = $1) as name_glow
+            (SELECT name_glow FROM profiles WHERE user_id = $1) as name_glow,
+            (SELECT badge FROM profiles WHERE user_id = $1) as badge
         "#
     )
     .bind(&user_id)
