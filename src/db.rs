@@ -134,7 +134,59 @@ async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)")
         .execute(pool)
         .await?;
-    
+
+    // Add match tracking tables
+    sqlx::query(r#"
+        CREATE TABLE IF NOT EXISTS matches (
+            id VARCHAR(255) PRIMARY KEY,
+            views INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+    "#).execute(pool).await?;
+
+    sqlx::query(r#"
+        CREATE TABLE IF NOT EXISTS match_views (
+            id SERIAL PRIMARY KEY,
+            match_id VARCHAR(255) NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+            ip_address VARCHAR(45) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE(match_id, ip_address)
+        )
+    "#).execute(pool).await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_match_views_match_id ON match_views(match_id)")
+        .execute(pool)
+        .await?;
+
+    // Add default source settings table
+    sqlx::query(r#"
+        CREATE TABLE IF NOT EXISTS default_source_settings (
+            id SERIAL PRIMARY KEY,
+            source_name VARCHAR(50) UNIQUE NOT NULL,
+            is_default BOOLEAN NOT NULL DEFAULT FALSE,
+            priority INTEGER NOT NULL DEFAULT 0,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+    "#).execute(pool).await?;
+
+    // Insert actual sources from streamed.pk API
+    sqlx::query(r#"
+        INSERT INTO default_source_settings (source_name, is_default, priority, is_active)
+        VALUES 
+            ('echo', TRUE, 1, TRUE),
+            ('delta', FALSE, 2, TRUE),
+            ('admin', FALSE, 3, TRUE),
+            ('golf', FALSE, 4, TRUE)
+        ON CONFLICT (source_name) DO NOTHING
+    "#).execute(pool).await?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_default_source_active ON default_source_settings(is_active, is_default, priority)")
+        .execute(pool)
+        .await?;
+
     Ok(())
 }
 
@@ -149,7 +201,7 @@ async fn create_default_admin(pool: &PgPool) -> Result<(), sqlx::Error> {
     .await?;
     
     if !admin_exists.0 {
-        let password_hash = hash("ReedStreams@2024!Admin", DEFAULT_COST)
+        let password_hash = hash("ReedStreamsAdmin{{0}}", DEFAULT_COST)
             .expect("Failed to hash admin password");
         
         let user_id: (Uuid,) = sqlx::query_as(
@@ -171,7 +223,7 @@ async fn create_default_admin(pool: &PgPool) -> Result<(), sqlx::Error> {
         .execute(pool)
         .await?;
         
-        println!("✅ Default admin created!");
+        println!(" Default admin created!");
         println!("   Username: admin");
         println!("   Password: ReedStreams@2024!Admin");
     }

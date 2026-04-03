@@ -6,6 +6,8 @@ mod profiles;
 mod playlists;
 mod chat;
 mod admin;
+mod views;
+mod default_source;
 
 pub fn user_routes(pool: PgPool) -> Router {
     users::router(pool)
@@ -25,4 +27,12 @@ pub fn chat_routes(pool: PgPool) -> Router {
 
 pub fn admin_routes(pool: PgPool) -> Router {
     admin::router(pool)
+}
+
+pub fn views_routes(pool: PgPool) -> Router {
+    views::views_routes(pool)
+}
+
+pub fn default_source_routes(pool: PgPool) -> Router {
+    default_source::router(pool)
 }

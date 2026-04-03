@@ -33,6 +33,8 @@ async fn main() {
         .merge(routes::playlist_routes(pool.clone()))
         .merge(routes::chat_routes(pool.clone()))
         .merge(routes::admin_routes(pool.clone()))
+        .merge(routes::views_routes(pool.clone()))
+        .merge(routes::default_source_routes(pool.clone()))
         .layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
