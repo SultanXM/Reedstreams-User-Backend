@@ -66,12 +66,15 @@ async fn track_view(
     Json(payload): Json<TrackViewRequest>,
 ) -> Json<ViewResponse> {
     let ip = get_client_ip(&headers);
+    tracing::info!("Tracking view for match_id: {}, IP: {}", payload.match_id, ip);
 
     // Ensure match exists in matches table
-    let _ = sqlx::query("INSERT INTO matches (id, views) VALUES ($1, 0) ON CONFLICT (id) DO NOTHING")
+    if let Err(e) = sqlx::query("INSERT INTO matches (id, views) VALUES ($1, 0) ON CONFLICT (id) DO NOTHING")
         .bind(&payload.match_id)
         .execute(&pool)
-        .await;
+        .await {
+        tracing::error!("Failed to ensure match exists: {}", e);
+    }
 
     // Check if this IP already viewed this match
     let existing = sqlx::query_scalar::<_, i64>(
@@ -81,20 +84,33 @@ async fn track_view(
     .bind(&ip)
     .fetch_one(&pool)
     .await
-    .unwrap_or(0);
+    .unwrap_or_else(|e| {
+        tracing::error!("Failed to check existing view: {}", e);
+        0
+    });
 
     if existing == 0 {
+        tracing::info!("New view for match_id: {} from IP: {}", payload.match_id, ip);
         // New view - insert and increment count
-        let _ = sqlx::query("INSERT INTO match_views (match_id, ip_address) VALUES ($1, $2)")
+        let res = sqlx::query("INSERT INTO match_views (match_id, ip_address) VALUES ($1, $2)")
             .bind(&payload.match_id)
             .bind(&ip)
             .execute(&pool)
             .await;
-
-        let _ = sqlx::query("UPDATE matches SET views = COALESCE(views, 0) + 1 WHERE id = $1")
-            .bind(&payload.match_id)
-            .execute(&pool)
-            .await;
+        
+        match res {
+            Ok(_) => {
+                if let Err(e) = sqlx::query("UPDATE matches SET views = COALESCE(views, 0) + 1 WHERE id = $1")
+                    .bind(&payload.match_id)
+                    .execute(&pool)
+                    .await {
+                    tracing::error!("Failed to increment view count: {}", e);
+                }
+            },
+            Err(e) => tracing::error!("Failed to insert match view: {}", e),
+        }
+    } else {
+        tracing::info!("Duplicate view for match_id: {} from IP: {}", payload.match_id, ip);
     }
 
     // Get current view count
@@ -102,7 +118,10 @@ async fn track_view(
         .bind(&payload.match_id)
         .fetch_one(&pool)
         .await
-        .unwrap_or(0);
+        .unwrap_or_else(|e| {
+            tracing::error!("Failed to get view count: {}", e);
+            0
+        });
 
     Json(ViewResponse { views })
 }
@@ -115,7 +134,10 @@ async fn get_views(
         .bind(&match_id)
         .fetch_one(&pool)
         .await
-        .unwrap_or(0);
+        .unwrap_or_else(|e| {
+            tracing::error!("Failed to get views for match {}: {}", match_id, e);
+            0
+        });
 
     Json(ViewResponse { views })
 }
