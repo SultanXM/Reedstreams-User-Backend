@@ -3,7 +3,12 @@
   "builds": [
     {
       "src": "src/main.rs",
-      "use": "@vercel/rust"
+      "use": "@vercel/rust",
+      "config": {
+        "env": {
+          "SQLX_OFFLINE": "1"
+        }
+      }
     }
   ],
   "routes": [
