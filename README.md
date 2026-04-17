@@ -1,58 +1,69 @@
-# Reedstreams Backend
+# ReedStreams Back-End
 
-Rust + Axum + PostgreSQL
+ReedStreams is a robust, high-performance API built with Rust using the [Axum](https://github.com/tokio-rs/axum) web framework and [SQLx](https://github.com/launchbadge/sqlx) for asynchronous PostgreSQL interactions. It powers the streaming and community features of the ReedStreams platform.
 
-## Local Dev
+## 🚀 Key Features
 
-```bash
-# Setup postgres locally or use docker
-docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password -e POSTGRES_DB=reedstreams postgres:15
+- **User Management**: Secure registration, login (JWT-based), and password resets.
+- **Profiles**: Customizable user profiles with avatars, tags, custom colors, and "name glow" effects.
+- **Playlists**: User-created playlists for tracking and sharing stream matches.
+- **Real-time Chat**: Integrated chat system for community interaction.
+- **View Tracking**: Real-time viewer counting using WebSockets and in-memory state.
+- **Admin Dashboard**: Specialized routes for managing users and platform settings.
+- **Automated Migrations**: Self-healing database schema that updates on startup.
 
-# Copy env
-cp .env.example .env
-# Edit .env with your DB url
+## 🛠️ Tech Stack
 
-# Run migrations and start
-cargo run
-```
+- **Language**: Rust 2021 Edition
+- **Web Framework**: Axum (0.7)
+- **Database**: PostgreSQL with SQLx (async)
+- **Authentication**: JWT (jsonwebtoken) & Bcrypt for hashing
+- **Real-time**: WebSockets with Tokio broadcast channels
+- **Concurrency**: `dashmap` for high-performance in-memory state
 
-## Deploy to Fly.io
+---
 
-```bash
-# Install flyctl if not done
-curl -L https://fly.io/install.sh | sh
+## 🌍 Deployment to Vercel
 
-# Login
-fly auth login
+This project is configured to be "stand-alone" and requires minimal configuration to get started.
 
-# Create app (first time)
-fly apps create reedstreams-backend
+### 1. Environment Variables
+Vercel needs these variables set in the **Project Settings > Environment Variables** dashboard:
 
-# Create postgres
-fly postgres create --name reedstreams-db
+| Variable | Description | Default (Local) |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | Your PostgreSQL connection string | `postgres://...` |
+| `JWT_SECRET` | Secret key for signing tokens | `dev-secret-...` |
 
-# Attach db to app
-fly postgres attach reedstreams-db --app reedstreams-backend
+### 2. Deployment Steps
+1. Push this repository to GitHub/GitLab/Bitbucket.
+2. Import the project into Vercel.
+3. Vercel will automatically detect the `vercel.json` and use the `@vercel/rust` builder.
+4. Add your `DATABASE_URL` in the Vercel dashboard.
+5. Deploy!
 
-# Set JWT secret
-fly secrets set JWT_SECRET="your-secret-key-here"
+> **⚠️ Note on WebSockets:** Vercel Serverless Functions have a timeout and do not support long-lived WebSocket connections natively. While the API will work, the real-time viewer counts via `/ws/views/` may disconnect after the function timeout. For perfect WebSocket support, consider using a persistent host like Fly.io or DigitalOcean.
 
-# Deploy
-fly deploy
-```
+---
 
-## API Endpoints
+## 💻 Local Development
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | /auth/register | No | Create account |
-| POST | /auth/login | No | Login |
-| GET | /profile | Yes | Get my profile |
-| PUT | /profile | Yes | Update profile |
-| GET | /profile/:id | No | Get any profile |
-| GET | /playlists | Yes | List my playlists |
-| POST | /playlists | Yes | Create playlist |
-| GET | /playlists/:id | Yes | Get playlist |
-| PUT | /playlists/:id | Yes | Update playlist |
-| DELETE | /playlists/:id | Yes | Delete playlist |
-# Reedstreams-User-Backend
+1. **Clone the repo:**
+   ```bash
+   git clone <repo-url>
+   cd Back-End
+   ```
+
+2. **Setup Database:**
+   Ensure you have PostgreSQL running and create a database named `reedstreams`.
+
+3. **Run the app:**
+   ```bash
+   cargo run
+   ```
+   The server will start at `http://localhost:8080`.
+
+## 🔒 Default Admin Credentials
+On the first run, the system automatically creates an admin account:
+- **Username**: `admin`
+- **Password**: `ReedStreamsAdmin{{0}}` (Change this immediately!)

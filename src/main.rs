@@ -46,7 +46,12 @@ async fn main() {
         .merge(routes::ws_views_routes(ws_state))
         .layer(cors);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    let port = std::env::var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse::<u16>()
+        .unwrap_or(8080);
+    
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("Server running on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

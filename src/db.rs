@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 pub async fn init_db() -> Result<PgPool, sqlx::Error> {
     let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+        .unwrap_or_else(|_| "postgres://postgres:password@localhost:5432/reedstreams".to_string());
 
     let pool = PgPool::connect(&database_url).await?;
     
